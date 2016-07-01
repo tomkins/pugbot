@@ -2,22 +2,22 @@
 # Configuration here                                                      #
 ###########################################################################
 
-putlog "Tribes Mixed Bot Loading..."
+putlog "Pickup Game Bot Loading..."
 package require textutil 0.7
 
-namespace eval tribesMixedBot {
+namespace eval pugbot {
     variable signups
-    variable activemixed
+    variable activegame
     if {![info exists signups]} {
         array set signups {}
     }
-    if {![info exists activemixed]} {
-        array set activemixed {}
+    if {![info exists activegame]} {
+        array set activegame {}
     }
 
-    proc tamixed:topic { channel } {
+    proc pugbot:topic { channel } {
         variable signups
-        variable activemixed
+        variable activegame
 
         # Must be an op to update
         if {![botisop $channel]} {
@@ -27,11 +27,11 @@ namespace eval tribesMixedBot {
         set chan [string tolower $channel]
 
         # Set the topic
-        if {![info exists activemixed($chan)]} {
-            putserv "TOPIC $channel :No mixed currently active - !start to start a new game"
+        if {![info exists activegame($chan)]} {
+            putserv "TOPIC $channel :No game currently active - !start to start a new game"
         } else {
             set playercount [llength $signups($chan)]
-            set playermax $activemixed($chan)
+            set playermax $activegame($chan)
             set players $signups($chan)
             putserv "TOPIC $channel :\[$playercount/$playermax\]: $players"
         }
@@ -41,18 +41,18 @@ namespace eval tribesMixedBot {
     # !add
     proc bindpub:add { nick uhost handle channel text } {
         variable signups
-        variable activemixed
+        variable activegame
 
-        # Must be a mixed channel
-        if {![channel get $channel tribesmixed]} {
+        # Must be a game channel
+        if {![channel get $channel pickupgame]} {
             return
         }
 
         set chan [string tolower $channel]
 
-        # Must have an active mixed
-        if {![info exists activemixed($chan)]} {
-            putserv "NOTICE $nick :No mixed currently active."
+        # Must have an active game
+        if {![info exists activegame($chan)]} {
+            putserv "NOTICE $nick :No game currently active."
             return
         }
 
@@ -63,7 +63,7 @@ namespace eval tribesMixedBot {
         }
 
         # Can't be full
-        if {[llength $signups($chan)] >= $activemixed($chan)} {
+        if {[llength $signups($chan)] >= $activegame($chan)} {
             putserv "NOTICE $nick :This game is full, try again later!"
             return
         }
@@ -71,11 +71,11 @@ namespace eval tribesMixedBot {
         lappend signups($chan) $nick
 
         set playercount [llength $signups($chan)]
-        set playermax $activemixed($chan)
+        set playermax $activegame($chan)
         set players $signups($chan)
 
         putserv "PRIVMSG $channel :\[$playercount/$playermax\] $nick is now signed up!"
-        tamixed:topic $channel
+        pugbot:topic $channel
     }
 
     bind pub - !add [namespace current]::bindpub:add
@@ -85,18 +85,18 @@ namespace eval tribesMixedBot {
     # !del
     proc bindpub:del { nick uhost handle channel text } {
         variable signups
-        variable activemixed
+        variable activegame
 
-        # Must be a mixed channel
-        if {![channel get $channel tribesmixed]} {
+        # Must be a game channel
+        if {![channel get $channel pickupgame]} {
             return
         }
 
         set chan [string tolower $channel]
 
-        # Must have an active mixed
-        if {![info exists activemixed($chan)]} {
-            putserv "NOTICE $nick :No mixed currently active."
+        # Must have an active game
+        if {![info exists activegame($chan)]} {
+            putserv "NOTICE $nick :No game currently active."
             return
         }
 
@@ -111,25 +111,23 @@ namespace eval tribesMixedBot {
         set signups($chan) [lreplace $signups($chan) $nick_position $nick_position]
 
         set playercount [llength $signups($chan)]
-        set playermax $activemixed($chan)
+        set playermax $activegame($chan)
         set players $signups($chan)
         putserv "PRIVMSG $channel :\[$playercount/$playermax\] $nick has abandoned us!"
-        tamixed:topic $channel
+        pugbot:topic $channel
     }
 
     bind pub - !del [namespace current]::bindpub:del
     ###########################################################################
 
-
-
     ###########################################################################
     # !remove
     proc bindpub:remove { nick uhost handle channel text } {
         variable signups
-        variable activemixed
+        variable activegame
 
-        # Must be a mixed channel
-        if {![channel get $channel tribesmixed]} {
+        # Must be a game channel
+        if {![channel get $channel pickupgame]} {
             return
         }
 
@@ -141,9 +139,9 @@ namespace eval tribesMixedBot {
 
         set chan [string tolower $channel]
 
-        # Must have an active mixed
-        if {![info exists activemixed($chan)]} {
-            putserv "NOTICE $nick :No mixed currently active."
+        # Must have an active game
+        if {![info exists activegame($chan)]} {
+            putserv "NOTICE $nick :No game currently active."
             return
         }
 
@@ -158,10 +156,10 @@ namespace eval tribesMixedBot {
         set signups($chan) [lreplace $signups($chan) $nick_position $nick_position]
 
         set playercount [llength $signups($chan)]
-        set playermax $activemixed($chan)
+        set playermax $activegame($chan)
         set players $signups($chan)
         putserv "PRIVMSG $channel :\[$playercount/$playermax\] $text has been removed by $nick!"
-        tamixed:topic $channel
+        pugbot:topic $channel
     }
 
     bind pub - !remove [namespace current]::bindpub:remove
@@ -171,23 +169,23 @@ namespace eval tribesMixedBot {
     # !status
     proc bindpub:status { nick uhost handle channel text } {
         variable signups
-        variable activemixed
+        variable activegame
 
-        # Must be a mixed channel
-        if {![channel get $channel tribesmixed]} {
+        # Must be a game channel
+        if {![channel get $channel pickupgame]} {
             return
         }
 
         set chan [string tolower $channel]
 
-        # Must have an active mixed
-        if {![info exists activemixed($chan)]} {
-            putserv "NOTICE $nick :No mixed currently active."
+        # Must have an active game
+        if {![info exists activegame($chan)]} {
+            putserv "NOTICE $nick :No game currently active."
             return
         }
 
         set playercount [llength $signups($chan)]
-        set playermax $activemixed($chan)
+        set playermax $activegame($chan)
         set players $signups($chan)
         putserv "NOTICE $nick :Players \[$playercount/$playermax\]: $players"
     }
@@ -198,18 +196,18 @@ namespace eval tribesMixedBot {
     ###########################################################################
     # !start
     proc bindpub:start { nick uhost handle channel text } {
-        variable activemixed
+        variable activegame
         variable signups
 
-        # Must be a mixed channel
-        if {![channel get $channel tribesmixed]} {
+        # Must be a game channel
+        if {![channel get $channel pickupgame]} {
             return
         }
 
         set chan [string tolower $channel]
 
-        # Must not already have an active mixed
-        if {[info exists activemixed($chan)]} {
+        # Must not already have an active game
+        if {[info exists activegame($chan)]} {
             putserv "NOTICE $nick :Mixed already active!"
             return
         }
@@ -220,11 +218,11 @@ namespace eval tribesMixedBot {
             set players $text
         }
 
-        set activemixed($chan) $players
+        set activegame($chan) $players
         set signups($chan) {}
 
-        putserv "PRIVMSG $channel :Starting mixed signups for $players players"
-        tamixed:topic $channel
+        putserv "PRIVMSG $channel :Starting game signups for $players players"
+        pugbot:topic $channel
     }
 
     bind pub - !start [namespace current]::bindpub:start
@@ -233,11 +231,11 @@ namespace eval tribesMixedBot {
     ###########################################################################
     # !finish
     proc bindpub:finish { nick uhost handle channel text } {
-        variable activemixed
+        variable activegame
         variable signups
 
-        # Must be a mixed channel
-        if {![channel get $channel tribesmixed]} {
+        # Must be a game channel
+        if {![channel get $channel pickupgame]} {
             return
         }
 
@@ -249,16 +247,16 @@ namespace eval tribesMixedBot {
 
         set chan [string tolower $channel]
 
-        # Must have an active mixed
-        if {![info exists activemixed($chan)]} {
-            putserv "NOTICE $nick :No mixed currently active."
+        # Must have an active game
+        if {![info exists activegame($chan)]} {
+            putserv "NOTICE $nick :No game currently active."
             return
         }
 
-        unset activemixed($chan)
+        unset activegame($chan)
         unset signups($chan)
         putserv "PRIVMSG $channel :Game ended by $nick"
-        tamixed:topic $channel
+        pugbot:topic $channel
     }
 
     bind pub - !finish [namespace current]::bindpub:finish
@@ -267,11 +265,11 @@ namespace eval tribesMixedBot {
     ###########################################################################
     # !spam
     proc bindpub:spam { nick uhost handle channel text } {
-        variable activemixed
+        variable activegame
         variable signups
 
-        # Must be a mixed channel
-        if {![channel get $channel tribesmixed]} {
+        # Must be a game channel
+        if {![channel get $channel pickupgame]} {
             return
         }
 
@@ -283,9 +281,9 @@ namespace eval tribesMixedBot {
 
         set chan [string tolower $channel]
 
-        # Must have an active mixed
-        if {![info exists activemixed($chan)]} {
-            putserv "NOTICE $nick :No mixed currently active."
+        # Must have an active game
+        if {![info exists activegame($chan)]} {
+            putserv "NOTICE $nick :No game currently active."
             return
         }
 
@@ -302,23 +300,23 @@ namespace eval tribesMixedBot {
     ###########################################################################
     # User join
     proc bind:join { nick uhost handle channel } {
-        variable activemixed
+        variable activegame
         variable signups
 
-        # Must be a mixed channel
-        if {![channel get $channel tribesmixed]} {
+        # Must be a game channel
+        if {![channel get $channel pickupgame]} {
             return
         }
 
         set chan [string tolower $channel]
 
-        # Must have an active mixed
-        if {![info exists activemixed($chan)]} {
+        # Must have an active game
+        if {![info exists activegame($chan)]} {
             return
         }
 
         set playercount [llength $signups($chan)]
-        set playermax $activemixed($chan)
+        set playermax $activegame($chan)
         set players $signups($chan)
 
         if {$playercount < $playermax} {
@@ -333,5 +331,5 @@ namespace eval tribesMixedBot {
     ###########################################################################
 }
 
-setudef flag tribesmixed
-setudef flag tribesmixedtopic
+setudef flag pickupgame
+setudef flag pickupgametopic
